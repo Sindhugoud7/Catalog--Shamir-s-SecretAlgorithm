@@ -1,64 +1,40 @@
-import com.codahale.shamir.Scheme;
 import org.json.JSONObject;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
-import java.io.FileReader;
-import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
-import java.util.HashMap;
-import java.util.Map;
+public class ShamirSecretSharing {
 
-public class TestFloatDouble{
-    public static void main(String[] args) {
-        try {
-            // Parse JSON files (Test cases)
-            JSONObject testCase1 = new JSONObject(new FileReader("testcase1.json"));
-            JSONObject testCase2 = new JSONObject(new FileReader("testcase2.json"));
+    public static void main(String[] args) throws Exception {
+        String content = new String(Files.readAllBytes(Paths.get("input.json")));
+        JSONObject json = new JSONObject(content);
+        
+        int n = json.getJSONObject("keys").getInt("n");
+        int k = json.getJSONObject("keys").getInt("k");
+        List<Integer> xValues = new ArrayList<>();
+        List<Integer> yValues = new ArrayList<>();
 
-            System.out.println("Processing Test Case 1:");
-            processTestCase(testCase1);
-
-            System.out.println("\nProcessing Test Case 2:");
-            processTestCase(testCase2);
-
-        } catch (Exception e) {
-            e.printStackTrace();
+        for (int i = 1; i <= n; i++) {
+            JSONObject root = json.getJSONObject(String.valueOf(i));
+            int x = i;
+            int y = decodeValue(root.getString("base"), root.getString("value"));
+            xValues.add(x);
+            yValues.add(y);
         }
+
+        int secret = calculateSecret(xValues, yValues, k);
+        System.out.println("Secret (c): " + secret);
     }
 
-    private static void processTestCase(JSONObject testCase) {
-        // Extract keys
-        JSONObject keys = testCase.getJSONObject("keys");
-        int n = keys.getInt("n");
-        int k = keys.getInt("k");
+    private static int decodeValue(String base, String value) {
+        int baseValue = Integer.parseInt(base);
+        return Integer.parseInt(value, baseValue);
+    }
 
-        // Decode roots into (x, y) pairs
-        Map<Integer, byte[]> points = new HashMap<>();
-        for (String key : testCase.keySet()) {
-            if (key.equals("keys")) continue;
-
-            JSONObject root = testCase.getJSONObject(key);
-            int x = Integer.parseInt(key);
-            int base = root.getInt("base");
-            String value = root.getString("value");
-
-            // Decode y-value from the specified base
-            byte[] y = new BigInteger(value, base).toByteArray();
-            points.put(x, y);
-        }
-
-        // Initialize Scheme
-        Scheme scheme = new Scheme(new SecureRandom(), n, k);
-
-        // Generate a secret
-        String secretString = "example_secret"; // Example secret
-        byte[] secret = secretString.getBytes(StandardCharsets.UTF_8);
-
-        // Split the secret into parts
-        Map<Integer, byte[]> parts = scheme.split(secret);
-        System.out.println("Split Secret Parts: " + parts);
-
-        // Recover the secret using the parts
-        byte[] recoveredSecret = scheme.join(parts);
-        System.out.println("Recovered Secret: " + new String(recoveredSecret, StandardCharsets.UTF_8));
+    private static int calculateSecret(List<Integer> xValues, List<Integer> yValues, int k) {
+        // Implement Lagrange interpolation or any other method to find the constant term c
+        // This is a placeholder for the actual implementation
+        return yValues.get(0); // Replace with actual calculation
     }
 }
